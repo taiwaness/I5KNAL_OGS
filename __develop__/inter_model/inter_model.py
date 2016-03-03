@@ -72,10 +72,11 @@ def check_duplicate(gff, linelist):
     for i in range(len(linelist)-1):
         for j in range(i+1, len(linelist)):
             source, target = linelist[i], linelist[j]
-            s7 = '{0:s}\t{1:s}\t{2:s}\t{3:d}\t{4:d}\t{5:s}\t{6:s}'.format(source['seqid'], source['source'], source['type'], source['start'], source['end'], source['score'], source['strand'], source['phase'])
-            t7 = '{0:s}\t{1:s}\t{2:s}\t{3:d}\t{4:d}\t{5:s}\t{6:s}'.format(target['seqid'], target['source'], target['type'], target['start'], target['end'], target['score'], target['strand'], target['phase'])
-            if s7 == t7:
-                pairs.append({'source':source, 'target':target})
+            if source['seqid'] == target['seqid']:
+                s7 = '{0:s}\t{1:s}\t{2:s}\t{3:d}\t{4:d}\t{5:s}\t{6:s}'.format(source['seqid'], source['source'], source['type'], source['start'], source['end'], source['score'], source['strand'], source['phase'])
+                t7 = '{0:s}\t{1:s}\t{2:s}\t{3:d}\t{4:d}\t{5:s}\t{6:s}'.format(target['seqid'], target['source'], target['type'], target['start'], target['end'], target['score'], target['strand'], target['phase'])
+                if s7 == t7:
+                    pairs.append({'source':source, 'target':target})
 
     for pair in pairs:
         same_target = False
@@ -94,7 +95,14 @@ def check_duplicate(gff, linelist):
                         same_target=False
                         break
         if same_target:
-            print(pair['source']['attributes']['ID'], pair['target']['attributes']['ID'])
+            tmp = [pair['source']['attributes']['ID'], pair['target']['attributes']['ID']]
+            sort_tmp = sorted(tmp)
+            key = '{0:s},{1:s}'.format(sort_tmp[0], sort_tmp[1])
+            if not result.has_key(key):
+                result[key] = []
+            result[key].append(eCode)
+            pair['source']['line_errors'].append(eCode)
+            pair['target']['line_errors'].append(eCode)
                    
     if len(result):
         return result
@@ -120,8 +128,9 @@ def main(gff):
         error_set = dict(error_set.items() + r.items())
 
     for k,v in error_set.items():
-        print(k, v, ERROR_INFO[v])
-    
+        for e in v:
+            print (k, e, ERROR_INFO[e])
+
 
 
 if __name__ == '__main__':

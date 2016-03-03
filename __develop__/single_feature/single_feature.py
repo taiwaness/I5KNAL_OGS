@@ -36,7 +36,7 @@ from gff3_modified import Gff3
 __version__ = '0.0.1'
 
 
-def FIX_MISSING_ATTR(gff): 
+def FIX_MISSING_ATTR(gff, logger_stderr=None): 
     features = [line for line in gff.lines if line['line_type']=='feature']
     flag = 0
     for f in features:
@@ -73,7 +73,11 @@ def FIX_PSEUDOGENE(gff):
                         other['line_status'] = 'removed'
 
 def detect_pseudogene(gff, line):
-    ''' This funtion should be only applied on a gff file that has been fixed by FIX_PSEUDOGENE function.'''
+    ''' 
+    Note:
+    1. This funtion should be only applied on a gff file that has been fixed by FIX_PSEUDOGENE function.
+    2. This function should be only applied on loci/transcript level features.
+    '''
     eCode = 'Esf0001'
     flag = 0
     result=dict()
@@ -85,13 +89,15 @@ def detect_pseudogene(gff, line):
         if not line['attributes'].has_key('Parent'):
            children = line['children'] 
         for child in children:
-            result[child['attributes']['ID']] = eCode
-            child['line_errors'] = eCode
+            if not result.has_key(child['attributes']['ID']):
+                result[child['attributes']['ID']]=[]
+            result[child['attributes']['ID']].append(eCode)
+            child['line_errors'].append(eCode)
     if len(result):
         return result
 
-def main(gff):
-    FIX_MISSING_ATTR(gff3)
+def main(gff, logger_stderr=None):
+    FIX_MISSING_ATTR(gff3, logger_stderr=logger_stderr)
     FIX_PSEUDOGENE(gff3)
 
     ERROR_CODE = ['Esf0001']
@@ -111,7 +117,8 @@ def main(gff):
                 error_set = dict(error_set.items() + r.items())
 
     for k,v in error_set.items():
-        print(k, v, ERROR_INFO[v])
+        for e in v:
+            print(k, e, ERROR_INFO[e])
     
 
 
@@ -159,5 +166,5 @@ if __name__ == '__main__':
         report_fh = open(args.output, 'wb')
     
     gff3 = Gff3(gff_file=args.gff, logger=logger_null)
-    main(gff3)
+    main(gff3, logger_stderr=logger_stderr)
     gff3.write(args.output)

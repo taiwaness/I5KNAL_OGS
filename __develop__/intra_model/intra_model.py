@@ -114,8 +114,10 @@ def pseudo_child_type(gff, rootline):
             if child['type'] == 'transcript' or child['type'] == 'pseudogenic_transcript':
                 pass
             else:
-                result[child['attributes']['ID']] = eCode
-                child['line_errors'] = eCode
+                if not result.has_key(child['attributes']['ID']):
+                    result[child['attributes']['ID']]=[]
+                result[child['attributes']['ID']].append(eCode)
+                child['line_errors'].append(eCode)
     if len(result):
         return result
 
@@ -135,7 +137,8 @@ def main(gff):
             error_set = dict(error_set.items() + r.items())
 
     for k,v in error_set.items():
-        print(k, v, ERROR_INFO[v])
+        for e in v:
+            print(k, e, ERROR_INFO[e])
     
 
 
