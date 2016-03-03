@@ -16,6 +16,11 @@ Tools under development.
 * template/
     - Template script for development
 
+## bin/
+General script for running through different phases of the OGS pipeline.
+* gff-QC.py
+    - Detection of GFF format errors
+
 ## lib/
 Completed tools would be shown as under a specific directory. Tools under development would be shown as a Symbolic link.
 * gff3_modified/
