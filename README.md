@@ -3,6 +3,18 @@ This project is to develop python tools for generating official gene set (OGS) b
 
 # __develop__/
 Tools under development.
+## example_file/
+    Example files for testing
+## gff3_to_fasta/
+    Extract specific sequeces from genome sequences accroding to gff file.
+## inter_model/
+    QC functions for processing multiple features between models (inter-model) in GFF3 file.
+## intra_model/
+    QC functions for processing multiple features within a model (intra-model) in GFF3 file.
+## single_feature/
+    QC functions for processing every single feature in GFF3 file.
+## template/
+    Template script for development
 
 # lib/
-Completed tools.
+Completed tools would be shown as under a specific directory. Tools under development would be shown as a Symbolic link.

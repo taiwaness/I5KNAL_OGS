@@ -35,6 +35,9 @@ from gff3_modified import Gff3
 
 __version__ = '0.0.1'
 
+def test():
+    print('Hello World.')
+
 def FIX_MISSING_ATTR(gff): 
     features = [line for line in gff.lines if line['line_type']=='feature']
     flag = 0
@@ -54,6 +57,51 @@ def FIX_MISSING_ATTR(gff):
                     logger_stderr.error('[Missing ID] The program try to automatically generate ID for this model, but failed becuase this model has multiple parent features.\n{0:s}'.format(f['line_raw']))
     if flag != 0:
         sys.exit()
+
+def featureSort(linelist, reverse=False):
+    ''' Used by replace_OGS.py'''
+    FEATURECODE = {
+        'gene': 0, 
+        'pseudogene': 0, 
+        'mRNA': 1,
+        'rRNA': 1,
+        'tRNA': 1,
+        'miRNA': 1,
+        'snRNA': 1,
+        'pseudogenic_transcript': 1,
+        'transcript': 1,
+        'exon': 2,
+        'pseudogenic_exon': 2,
+        'CDS': 3,
+    }
+
+    id2line = {}
+    id2index = {}
+    seq2id = {}
+    for line in linelist:
+        lineindex = line['start'] if reverse==False else line['end']
+        id2line[str(line['line_raw'])] = line
+        if FEATURECODE.has_key(line['type']):
+            id2index[str(line['line_raw'])] = [lineindex, FEATURECODE[line['type']] if reverse==False else (-FEATURECODE[line['type']])]
+        else:
+            id2index[str(line['line_raw'])] = [lineindex, 99 if reverse==False else -99]
+        tmp = re.search('(.+?)(\d+)',line['seqid'])
+        seqnum = tmp.groups()[1]
+        if seq2id.has_key(seqnum):
+            seq2id[seqnum].append(str(line['line_raw']))
+        else:
+            seq2id[seqnum] = [str(line['line_raw'])]
+    keys = sorted(seq2id, key=lambda i: int(i))
+    newlinelist=[]
+    for k in keys:
+        ids = seq2id[k]
+        d = {}
+        for ID in ids:
+            d[ID] = id2index[ID]
+        id_sorted = sorted(d, key=lambda i: (int(d[i][0]), int(d[i][1])), reverse=reverse)
+        for i in id_sorted:
+            newlinelist.append(id2line[i])
+    return newlinelist
 
 def pseudo_child_type(gff, rootline):
     eCode = 'Ema0005'
@@ -76,7 +124,7 @@ def main(gff):
     FIX_MISSING_ATTR(gff3)
 
     ERROR_CODE = ['Ema0005']
-    ERROR_TAG = ['[unusual child features in the type of pseudogene found]']
+    ERROR_TAG = ['unusual child features in the type of pseudogene found']
     ERROR_INFO = dict(zip(ERROR_CODE, ERROR_TAG))
 
     roots = [line for line in gff.lines if line['line_type']=='feature' and not line['attributes'].has_key('Parent')]

@@ -32,6 +32,7 @@ else:
     lib_path = dirname(__file__) + '/../../lib'
 sys.path.insert(1, lib_path)
 from gff3_modified import Gff3
+import intra_model 
 
 __version__ = '0.0.1'
 
@@ -55,13 +56,46 @@ def FIX_MISSING_ATTR(gff):
     if flag != 0:
         sys.exit()
 
-def test(gff, line):
-    eCode = ''
-    result = dict()
+def check_duplicate(gff, linelist):
     '''
-    code here
+    This function assumes that,
+    1. Each gnee is unique
+    2. Children features such as Exons/CDSs do not contain multiple Parent IDs
 
+    Note: If there are additional transcript type in the input gfff, then you should go to intra_model.featureSort, and add the new transcript type to the dict of  FEATURECODE.
     '''
+
+    eCode = 'Emn0001'
+    result = dict()
+
+    pairs = list()
+    for i in range(len(linelist)-1):
+        for j in range(i+1, len(linelist)):
+            source, target = linelist[i], linelist[j]
+            s7 = '{0:s}\t{1:s}\t{2:s}\t{3:d}\t{4:d}\t{5:s}\t{6:s}'.format(source['seqid'], source['source'], source['type'], source['start'], source['end'], source['score'], source['strand'], source['phase'])
+            t7 = '{0:s}\t{1:s}\t{2:s}\t{3:d}\t{4:d}\t{5:s}\t{6:s}'.format(target['seqid'], target['source'], target['type'], target['start'], target['end'], target['score'], target['strand'], target['phase'])
+            if s7 == t7:
+                pairs.append({'source':source, 'target':target})
+
+    for pair in pairs:
+        same_target = False
+        if pair['source'].has_key('children') and pair['target'].has_key('children'):
+            schildren = pair['source']['children']
+            tchildren = pair['target']['children']
+            if len(schildren) == len(tchildren):
+                sort_schildren = intra_model.featureSort(schildren, reverse=True if pair['source']['strand'] == '-' else False)
+                sort_tchildren = intra_model.featureSort(tchildren, reverse=True if pair['source']['strand'] == '-' else False)
+                for i in range(len(sort_schildren)):
+                    s7 = '{0:s}\t{1:s}\t{2:s}\t{3:d}\t{4:d}\t{5:s}\t{6:s}'.format(sort_schildren[i]['seqid'], sort_schildren[i]['source'], sort_schildren[i]['type'], sort_schildren[i]['start'], sort_schildren[i]['end'], sort_schildren[i]['score'], sort_schildren[i]['strand'], sort_schildren[i]['phase'])
+                    t7 = '{0:s}\t{1:s}\t{2:s}\t{3:d}\t{4:d}\t{5:s}\t{6:s}'.format(sort_tchildren[i]['seqid'], sort_tchildren[i]['source'], sort_tchildren[i]['type'], sort_tchildren[i]['start'], sort_tchildren[i]['end'], sort_tchildren[i]['score'], sort_tchildren[i]['strand'], sort_tchildren[i]['phase'])
+                    if s7 == t7:
+                        same_target=True
+                    else:
+                        same_target=False
+                        break
+        if same_target:
+            print(pair['source']['attributes']['ID'], pair['target']['attributes']['ID'])
+                   
     if len(result):
         return result
 
@@ -69,16 +103,21 @@ def test(gff, line):
 def main(gff):
     FIX_MISSING_ATTR(gff3)
 
-    ERROR_CODE = ['']
-    ERROR_TAG = ['[]']
+    ERROR_CODE = ['Emn0001']
+    ERROR_TAG = ['Duplicate transcripts found']
     ERROR_INFO = dict(zip(ERROR_CODE, ERROR_TAG))
 
     roots = [line for line in gff.lines if line['line_type']=='feature' and not line['attributes'].has_key('Parent')]
     error_set=dict()
+    trans_list = list()
     for root in roots:
-        r = test(gff, root)
-        if not r == None:
-            error_set = dict(error_set.items() + r.items())
+        children = root['children']
+        for child in children:
+            trans_list.append(child)
+
+    r = check_duplicate(gff, trans_list)
+    if not r == None:
+        error_set = dict(error_set.items() + r.items())
 
     for k,v in error_set.items():
         print(k, v, ERROR_INFO[v])
