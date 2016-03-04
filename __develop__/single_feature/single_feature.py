@@ -167,4 +167,5 @@ if __name__ == '__main__':
     
     gff3 = Gff3(gff_file=args.gff, logger=logger_null)
     main(gff3, logger_stderr=logger_stderr)
-    gff3.write(args.output)
+    if args.output:
+        gff3.write(args.output)
