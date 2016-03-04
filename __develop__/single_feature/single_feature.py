@@ -96,12 +96,24 @@ def detect_pseudogene(gff, line):
     if len(result):
         return result
 
+def detect_negative_zero_coordinate(gff, line):
+    eCode = 'Esf0002'
+    result=dict()
+    if line['start'] <= 0 or line['end'] <= 0:
+        if not result.has_key(line['attributes']['ID']):
+            result[line['attributes']['ID']]=[]
+        result[line['attributes']['ID']].append(eCode)
+        line['line_errors'].append(eCode)
+    if len(result):
+        return result
+
+
 def main(gff, logger_stderr=None):
     FIX_MISSING_ATTR(gff3, logger_stderr=logger_stderr)
     FIX_PSEUDOGENE(gff3)
 
-    ERROR_CODE = ['Esf0001']
-    ERROR_TAG = ['[pseudogene or not?]']
+    ERROR_CODE = ['Esf0001', 'Esf0002']
+    ERROR_TAG = ['pseudogene or not?', 'Negative start/end coordinate']
     ERROR_INFO = dict(zip(ERROR_CODE, ERROR_TAG))
 
     roots = [line for line in gff.lines if line['line_type']=='feature' and not line['attributes'].has_key('Parent')]
@@ -110,17 +122,35 @@ def main(gff, logger_stderr=None):
         r = detect_pseudogene(gff, root)
         if not r == None:
             error_set = dict(error_set.items() + r.items())
+        r = detect_negative_zero_coordinate(gff, root)
+        if not r == None:
+            error_set = dict(error_set.items() + r.items())
+
         children = root['children']
         for child in children:
             r = detect_pseudogene(gff, child)
             if not r == None:
                 error_set = dict(error_set.items() + r.items())
+            r = detect_negative_zero_coordinate(gff, child)
+            if not r == None:
+                error_set = dict(error_set.items() + r.items())
+
+            descendants = gff.collect_descendants(child)
+            dr=dict()
+            for d in descendants:
+                r = detect_negative_zero_coordinate(gff, d)
+                if not r == None:
+                    dr = dict(dr.items() + r.items())
+            if not dr == None:
+                for k,v in dr.items():
+                    dr[child['attributes']['ID']] = v
+                    del dr[k]
+                error_set = dict(error_set.items() + dr.items())
 
     for k,v in error_set.items():
         for e in v:
             print(k, e, ERROR_INFO[e])
     
-
 
 if __name__ == '__main__':
     logger_stderr = logging.getLogger(__name__+'stderr')
