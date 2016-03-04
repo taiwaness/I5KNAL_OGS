@@ -5,6 +5,8 @@ This project is to develop python tools for generating official gene set (OGS) b
 Tools under development.
 * example_file/
     - Example files for testing
+* function4gff/
+    - Functions for dealing with gff3
 * gff3_to_fasta/
     - Extract specific sequeces from genome sequences accroding to gff file.
 * inter_model/
@@ -19,7 +21,11 @@ Tools under development.
 ## bin/
 General script for running through different phases of the OGS pipeline.
 * gff-QC.py
-    - Detection of GFF format errors
+    - Detection of GFF format errors (Error_code: Error_tag)
+        + Esf0001: pseudogene or not?
+        + Esf0002: Negative/Zero start/end coordinate
+        + Ema0005: unusual child features in the type of pseudogene found
+        + Emr0001: Duplicate transcripts found
 
 ## lib/
 Completed tools would be shown as under a specific directory. Tools under development would be shown as a Symbolic link.
